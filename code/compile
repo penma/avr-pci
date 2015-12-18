@@ -1,0 +1,29 @@
+#!/bin/sh
+set -e
+
+f() {
+	printf '\n\033[4m%-'$(stty size | cut -d ' ' -f 2)'s\033[m\n' "$*" >&2
+}
+
+d() { f $*; "$@"; }
+
+# not using -fmerge-all-constants for now because it bugs around for data strings
+d avr-gcc \
+	-mmcu=atmega2560 -DF_CPU=16000000UL \
+	-gdwarf-2 -std=gnu99 -Os -fwhole-program -flto -mstrict-X \
+	-funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums \
+	-Wall -Wundef -Wno-main -Wno-comment -Werror=implicit-function-declaration \
+	-fstack-usage -Wstack-usage=4 \
+	-DLCD_SUPPORT \
+	-I. main.c debug.c console.c master_read.c master_write.c pci_signals.c \
+	-o main.elf
+
+f stack usage by function
+column -t -s '	 :' *.su | sort -n -k 5
+
+f section sizes
+avr-objdump -hw -j.text -j.bss -j.data main.elf | tail -n +5
+
+f code size by function
+avr-nm --print-size --size-sort main.elf
+
