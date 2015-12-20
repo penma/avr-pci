@@ -66,6 +66,7 @@ uint32_t master_read(uint32_t addr, uint8_t cmd, uint8_t be) {
 
 	clk_high();
 	ad_tristate();
+	cbe_set(be);
 
 	clk_low();
 	assert_irdy();
@@ -74,7 +75,6 @@ uint32_t master_read(uint32_t addr, uint8_t cmd, uint8_t be) {
 
 	par_output_mode();
 	par_set(addr_par);
-	cbe_set(be);
 
 	/* wait for DEVSEL to be asserted */
 	int c = 4;
@@ -152,7 +152,9 @@ master_abort:
 target_abort:
 	deassert_irdy_1();
 	deassert_frame_1();
+	ad_tristate();
 	cbe_tristate();
+	par_tristate();
 	clk_high();
 	deassert_irdy_2();
 	deassert_frame_2();
@@ -163,7 +165,9 @@ target_abort:
 	return 0xffffffff;
 
 retry:
-	/* TODO */
+	/* TODO - currently unimplemented (RTL8139/69 never respond with
+	 * Target Retry
+	 */
 	panic("Target requested Retry but this is unimplemented");
 }
 

@@ -65,15 +65,14 @@ void master_write(uint32_t addr, uint8_t cmd, uint8_t be, uint32_t value) {
 	 */
 
 	clk_high();
+	ad_set(value);
+	uint8_t data_par = ad_cbe_parity(value, be);
+	cbe_set(be);
 	clk_low();
 
 	assert_irdy();
 	deassert_frame_1();
 	idsel_low();
-
-	ad_set(value);
-	cbe_set(be);
-	uint8_t data_par = ad_cbe_parity(value, be);
 
 	par_output_mode();
 	par_set(addr_par);
@@ -82,8 +81,8 @@ void master_write(uint32_t addr, uint8_t cmd, uint8_t be, uint32_t value) {
 	int c = 4;
 	while (!is_devsel_asserted()) {
 		clk_high();
-		clk_low();
 		par_set(data_par);
+		clk_low();
 		c--;
 
 		if (c == 0) {
@@ -105,8 +104,8 @@ void master_write(uint32_t addr, uint8_t cmd, uint8_t be, uint32_t value) {
 		}
 
 		clk_high();
-		clk_low();
 		par_set(data_par);
+		clk_low();
 		c--;
 
 		if (c == 0) {
@@ -159,7 +158,9 @@ target_abort:
 	return 0xffffffff;
 
 retry:
-	/* TODO */
+	/* TODO - currently unimplemented (RTL8139/69 never respond with
+	 * Target Retry
+	 */
 	panic("Target requested Retry but this is unimplemented");
 }
 
