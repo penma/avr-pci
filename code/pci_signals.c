@@ -95,13 +95,11 @@ void cbe_set(uint8_t v) {
 
 /* CLK line */
 
-void clk_high() __attribute__((always_inline));
-void clk_high() {
+__attribute__((always_inline)) void clk_high() {
 	PORTB |= PB_CLK;
 }
 
-void clk_low() __attribute__((always_inline));
-void clk_low() {
+__attribute__((always_inline)) void clk_low() {
 	PORTB &= ~PB_CLK;
 }
 
@@ -233,8 +231,7 @@ static void _disconnect_bus_2() {
 	PORTA = PORTC = PORTE = PORTF = PORTG = 0;
 	PORTH = PORTJ = PORTK = 0;
 }
-void disconnect_bus() __attribute__((always_inline));
-void disconnect_bus() {
+__attribute__((always_inline)) void disconnect_bus() {
 	/* of port B (arbitration signals), tristate all pins, except RST#,
 	 * which is set to output low so that targets tristate their outputs
 	 * immediately (probably/hopefully faster than we do)
