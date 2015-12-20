@@ -13,9 +13,9 @@ d avr-gcc \
 	-gdwarf-2 -std=gnu99 -Os -fwhole-program -flto -mstrict-X \
 	-funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums \
 	-Wall -Wundef -Wno-main -Wno-comment -Werror=implicit-function-declaration \
-	-fstack-usage -Wstack-usage=4 \
+	-fstack-usage -Wstack-usage=10 \
 	-DLCD_SUPPORT \
-	-I. main.c debug.c console.c master_read.c master_write.c pci_signals.c \
+	-I. main.c debug.c console.c master_transaction.c pci_signals.c \
 	-o main.elf
 
 f stack usage by function

@@ -4,7 +4,7 @@
 #include "console.h"
 #include "pci_signals.h"
 
-static void panic(const char *m) {
+__attribute__((noreturn)) static void panic(const char *m) {
 	disconnect_bus();
 	console_str(m);
 	while (1) { }
@@ -12,7 +12,7 @@ static void panic(const char *m) {
 
 static uint8_t ad_cbe_parity(uint32_t addr, uint8_t cbe) {
 	/* even number of ones in addr, cbe, par */
-	return !!(__builtin_parity(addr) ^ __builtin_parity(cbe));
+	return !!(__builtin_parityl(addr) ^ __builtin_parity(cbe));
 }
 
 static void sanity_deasserted_devsel_trdy() {
@@ -42,8 +42,9 @@ static void dumpsignals() {
 	_delay_ms(1000);
 }
 
+enum _rw_type { READ_TRANSACTION, WRITE_TRANSACTION };
 
-void master_write(uint32_t addr, uint8_t cmd, uint8_t be, uint32_t value) {
+__attribute__((always_inline)) static uint32_t master_transaction(uint32_t addr, uint8_t cmd, uint8_t be, uint32_t value, enum _rw_type type) {
 	sanity_deasserted_frame_irdy();
 
 	/* Address phase */
@@ -59,17 +60,27 @@ void master_write(uint32_t addr, uint8_t cmd, uint8_t be, uint32_t value) {
 	cbe_set(cmd);
 	uint8_t addr_par = ad_cbe_parity(addr, cmd);
 
-	/* start of first and last data phase
-	 * assert IRDY, because going to send the first word
-	 * deassert FRAME, because this is the last word
+	/* prepare for the first data phase
+	 * we assert IRDY, because we are ready to transfer the first data word
+	 * we deassert FRAME, because it is going to be the last data word
 	 */
 
 	clk_high();
-	ad_set(value);
-	uint8_t data_par = ad_cbe_parity(value, be);
+	uint8_t data_par;
+	if (type == READ_TRANSACTION) {
+		/* the following cycle is a turnaround cycle.
+		 * the necessary extra cycle is enforced by the target in
+		 * this case
+		 */
+		ad_tristate();
+	} else {
+		/* we directly provide the first data word */
+		ad_set(value);
+		data_par = ad_cbe_parity(value, be);
+	}
 	cbe_set(be);
-	clk_low();
 
+	clk_low();
 	assert_irdy();
 	deassert_frame_1();
 	idsel_low();
@@ -81,7 +92,11 @@ void master_write(uint32_t addr, uint8_t cmd, uint8_t be, uint32_t value) {
 	int c = 4;
 	while (!is_devsel_asserted()) {
 		clk_high();
-		par_set(data_par);
+		if (type == READ_TRANSACTION) {
+			par_tristate();
+		} else {
+			par_set(data_par);
+		}
 		clk_low();
 		c--;
 
@@ -104,7 +119,11 @@ void master_write(uint32_t addr, uint8_t cmd, uint8_t be, uint32_t value) {
 		}
 
 		clk_high();
-		par_set(data_par);
+		if (type == READ_TRANSACTION) {
+			par_tristate();
+		} else {
+			par_set(data_par);
+		}
 		clk_low();
 		c--;
 
@@ -121,25 +140,47 @@ void master_write(uint32_t addr, uint8_t cmd, uint8_t be, uint32_t value) {
 	}
 
 	/* TRDY is asserted and as we have previously asserted IRDY, a data
-	 * phase is about to happen. pulse clock, the target will do the write.
+	 * phase is about to happen.
 	 */
-	clk_high();
-	clk_low();
-
-	par_set(data_par);
+	uint32_t adval;
+	if (type == READ_TRANSACTION) {
+		adval = ad_get();
+		clk_high();
+		par_tristate();
+	} else {
+		clk_high();
+		par_set(data_par);
+		ad_tristate();
+	}
 	deassert_irdy_1();
 	deassert_frame_2();
 	cbe_tristate();
-	ad_tristate();
+	clk_low();
 
 	/* target should now also return bus to idle
-	 * afterwards, we stop providing parity */
+	 * also, this is one clock after the data phase, so the last cycle for
+	 * parity
+	 */
+	if (type == READ_TRANSACTION) {
+		/* target provides parity, we read and verify it */
+		uint8_t adval_par = par_get();
+		if (adval_par != ad_cbe_parity(adval, be)) {
+			/* TODO handle properly */
+			panic("Parity error");
+		}
+	}
 	clk_high();
-	clk_low();
 	deassert_irdy_2();
 	par_tristate();
+	clk_low();
 
 	sanity_deasserted_devsel_trdy();
+
+	if (type == READ_TRANSACTION) {
+		return adval;
+	} else {
+		return 0;
+	}
 
 master_abort:
 target_abort:
@@ -165,3 +206,10 @@ retry:
 }
 
 
+uint32_t master_read(uint32_t addr, uint8_t cmd, uint8_t be) {
+	return master_transaction(addr, cmd, be, 0, READ_TRANSACTION);
+}
+
+void master_write(uint32_t addr, uint8_t cmd, uint8_t be, uint32_t value) {
+	master_transaction(addr, cmd, be, value, WRITE_TRANSACTION);
+}

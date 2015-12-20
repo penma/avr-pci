@@ -10,8 +10,7 @@
 #include "console.h"
 
 #include "pci_signals.h"
-#include "master_read.h"
-#include "master_write.h"
+#include "master_transaction.h"
 
 static void panic(const char *m) {
 	disconnect_bus();
