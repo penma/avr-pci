@@ -45,9 +45,6 @@ void deassert_irdy_1();
 void deassert_irdy_2();
 int is_irdy_asserted();
 
-void idsel_high();
-void idsel_low();
-
 void initialize_bus();
 void disconnect_bus();
 

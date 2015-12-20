@@ -52,7 +52,6 @@ __attribute__((always_inline)) static uint32_t master_transaction(uint32_t addr,
 	clk_high();
 	clk_low();
 	assert_frame();
-	idsel_high();
 
 	ad_output_mode();
 	ad_set(addr);
@@ -83,7 +82,6 @@ __attribute__((always_inline)) static uint32_t master_transaction(uint32_t addr,
 	clk_low();
 	assert_irdy();
 	deassert_frame_1();
-	idsel_low();
 
 	par_output_mode();
 	par_set(addr_par);

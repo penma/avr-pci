@@ -131,16 +131,6 @@ FUNCS_SIG(DEVSEL, devsel)
 FUNCS_SIG(TRDY,   trdy)
 FUNCS_SIG(IRDY,   irdy)
 
-/* IDSEL */
-
-void idsel_high() {
-	PORTG |= PG_IDSEL;
-}
-
-void idsel_low() {
-	PORTG &= ~PG_IDSEL;
-}
-
 void initialize_bus() {
 	/* do a bus reset. for this, assert RST# first.
 	 * while we're at it, we start configuring port B correctly
@@ -170,11 +160,12 @@ void initialize_bus() {
 	DDRF = 0;
 	PORTF = PF_STOP | PF_DEVSEL | PF_TRDY | PF_IRDY | PF_FRAME | (1 << 2) | (1 << 3) | (1 << 7);
 
-	/* IDSEL is an output and initially low.
+	/* IDSEL is an output and initially high (we only have one slot, so we
+	 * can always select it).
 	 * 0,1,2,3,4 are not connected and pulled up
 	 */
 	DDRG = PG_IDSEL;
-	PORTG = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 3) | (1 << 4);
+	PORTG = PG_IDSEL | (1 << 0) | (1 << 1) | (1 << 2) | (1 << 3) | (1 << 4);
 
 	/* PAR etc.
 	 * 3,4,5,6 are not connected and pulled up
