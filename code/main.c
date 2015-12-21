@@ -33,6 +33,12 @@ ISR(PCINT2_vect) {
 void main() {
 	console_reset();
 
+	/* for timing/benchmarking purposes.
+	 * compare TCNT3 before and after some code to get a cycle count
+	 */
+	TCCR3A = 0;
+	TCCR3B = (1 << CS30);
+
 	console_fstr("Stuff initialized! Yay! \\o/\n");
 
 	initialize_bus();
