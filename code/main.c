@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include "console.h"
+#include "timing.h"
 
 #include "pci_signals.h"
 #include "master_transaction.h"
@@ -33,11 +34,8 @@ ISR(PCINT2_vect) {
 void main() {
 	console_reset();
 
-	/* for timing/benchmarking purposes.
-	 * compare TCNT3 before and after some code to get a cycle count
-	 */
-	TCCR3A = 0;
-	TCCR3B = (1 << CS30);
+	timing_init();
+	sei();
 
 	console_fstr("Stuff initialized! Yay! \\o/\n");
 
@@ -45,7 +43,6 @@ void main() {
 
 	PCMSK2 = (1 << PCINT17) | (1 << PCINT18);
 	PCICR |= (1 << PCIE2);
-	sei();
 
 	console_fstr("Bus initialized\n");
 

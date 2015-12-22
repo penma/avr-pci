@@ -15,7 +15,7 @@ d avr-gcc \
 	-Wall -Wundef -Wno-main -Wno-comment -Werror=implicit-function-declaration \
 	-fstack-usage -Wstack-usage=10 \
 	-DLCD_SUPPORT \
-	-I. main.c debug.c console.c master_transaction.c pci_signals.c \
+	-I. main.c debug.c console.c master_transaction.c pci_signals.c timing.c \
 	-o main.elf
 
 f stack usage by function

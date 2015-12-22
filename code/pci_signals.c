@@ -1,6 +1,7 @@
 #include <avr/io.h>
 #include <stdint.h>
 #include <util/delay.h>
+#include "timing.h"
 
 /* port A */
 #define PA_INTA (1 << 7)
