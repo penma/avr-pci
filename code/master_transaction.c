@@ -6,6 +6,7 @@
 
 __attribute__((noreturn)) static void panic(const char *m) {
 	disconnect_bus();
+	PCICR &= ~(1 << PCIE2);
 	console_str(m);
 	while (1) { }
 }
@@ -99,7 +100,7 @@ __attribute__((always_inline)) static uint32_t master_transaction(uint32_t addr,
 		c--;
 
 		if (c == 0) {
-			console_fstr("Master abort - DEVSEL not asserted\n");
+			console_fstr("Master Abort/!DEVSEL");
 			goto master_abort;
 		}
 	}
