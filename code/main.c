@@ -32,6 +32,13 @@ ISR(PCINT2_vect) {
 	console_fstr("\n");
 }
 
+ISR(PCINT0_vect) {
+	uint8_t pb = PINB;
+	if (!(pb & (1 << 0))) {
+		console_fstr("REQ BUS\n");
+	}
+}
+
 static void identify_subdevice_generic(uint32_t vpid, uint32_t svpid) {
 	if (vpid != svpid) {
 		uint16_t vendor = vpid & 0xffff;
@@ -92,8 +99,9 @@ void main() {
 
 	initialize_bus();
 
+	PCMSK0 |= (1 << PCINT0);
 	PCMSK2 = (1 << PCINT17) | (1 << PCINT18);
-	PCICR |= (1 << PCIE2);
+	PCICR |= (1 << PCIE0) | (1 << PCIE2);
 
 	console_fstr("PCI Bus initialized\n");
 
