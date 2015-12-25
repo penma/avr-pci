@@ -10,15 +10,12 @@
 #include "console.h"
 #include "timing.h"
 
-#include "pci_signals.h"
-#include "master_transaction.h"
+#include "pci/pci.h"
+#include "pci/registers.h"
+#include "pci/signals.h"
+#include "pci/panic.h"
 
-static void panic(const char *m) {
-	disconnect_bus();
-	PCICR &= ~(1 << PCIE2);
-	console_str(m);
-	while (1) { }
-}
+#include "rtl8169.h"
 
 ISR(PCINT2_vect) {
 	uint8_t pk = PINK;
@@ -41,8 +38,6 @@ ISR(PCINT0_vect) {
 
 static void identify_subdevice_generic(uint32_t vpid, uint32_t svpid) {
 	if (vpid != svpid) {
-		uint16_t vendor = vpid & 0xffff;
-		uint16_t dev = (vpid >> 16) & 0xffff;
 		uint16_t svendor = svpid & 0xffff;
 		uint16_t sdev = (svpid >> 16) & 0xffff;
 
@@ -109,22 +104,23 @@ void main() {
 
 	/* device present?! yes we read this twice, but whatever */
 
-	if (master_read(0, 0b1010, 0b0000) == 0xffffffff) {
+	if (pci_config_read32(0) == 0xffffffff) {
 		panic("/no device");
 	}
 
 	/* configuration read, full dword, offset 0 */
-	uint32_t vpid = master_read(0, 0b1010, 0b0000);
-	uint32_t svpid = master_read(0x2c, 0b1010, 0b0000);
+	uint32_t vpid = pci_config_read32(PCIR_DEVVENDOR);
+	uint32_t svpid = pci_config_read32(PCIR_SUBVEND_0);
 
 	identify_device(vpid, svpid);
 
 	/* BARs */
 	uint32_t bar_rb;
 	uint8_t bar_ct = 0;
-	for (uint8_t bv = 0x10; bv <= 0x24; bv += 4) {
-		master_write(bv, 0b1011, 0b0000, 0xffffffff);
-		bar_rb = master_read(bv, 0b1010, 0b0000);
+	for (uint8_t bar_no = 0; bar_no <= PCIR_MAX_BAR_0; bar_no++) {
+		uint8_t bv = PCIR_BAR(bar_no);
+		pci_config_write32(bv, 0xffffffff);
+		bar_rb = pci_config_read32(bv);
 		if (!(bar_rb & 0x80000000)) {
 			/* either not valid or the device actually demands
 			 * 4G of IO space, which we will just refuse then
@@ -135,17 +131,17 @@ void main() {
 		bar_ct++;
 		console_hex8(bv);
 		console_fstr(":");
-		if (bar_rb & (1 << 0)) {
+		if (PCI_BAR_IO(bar_rb)) {
 			console_fstr("I/O  ");
 		} else {
 			console_fstr("Mem");
-			if (bar_rb & (1 << 3)) {
+			if (bar_rb & PCIM_BAR_MEM_PREFETCH) {
 				console_fstr("P");
 			}
-			switch (bar_rb & 0b111) {
-			case 0b000: console_fstr("32"); break;
-			case 0b010: console_fstr("1M"); break;
-			case 0b100: console_fstr("64"); break;
+			switch (bar_rb & PCIM_BAR_MEM_TYPE) {
+			case PCIM_BAR_MEM_32 : console_fstr("32"); break;
+			case PCIM_BAR_MEM_1MB: console_fstr("1M"); break;
+			case PCIM_BAR_MEM_64 : console_fstr("64"); break;
 			default:    console_fstr("??"); break;
 			}
 		}
@@ -168,6 +164,8 @@ void main() {
 	}
 
 	timing_end();
+
+	rtl8169_init();
 
 	panic("/done");
 }

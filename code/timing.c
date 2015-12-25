@@ -2,14 +2,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include "console.h"
-#include "pci_signals.h"
-
-__attribute__((noreturn)) static void panic(const char *m) {
-	disconnect_bus();
-	PCICR &= ~(1 << PCIE2);
-	console_str(m);
-	while (1) { }
-}
+#include "pci/panic.h"
 
 ISR(TIMER3_OVF_vect) {
 	/* we abuse Timer 4 value as higher-order bits */

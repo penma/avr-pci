@@ -8,14 +8,17 @@ f() {
 d() { f $*; "$@"; }
 
 # not using -fmerge-all-constants for now because it bugs around for data strings
+# currently disabling -Wstack-usage=10
 d avr-gcc \
 	-mmcu=atmega2560 -DF_CPU=16000000UL \
 	-gdwarf-2 -std=gnu99 -Os -fwhole-program -flto -mstrict-X \
 	-funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums \
 	-Wall -Wundef -Wno-main -Wno-comment -Werror=implicit-function-declaration \
-	-fstack-usage -Wstack-usage=10 \
+	-fstack-usage \
 	-DLCD_SUPPORT \
-	-I. main.c debug.c console.c master_transaction.c pci_signals.c timing.c \
+	-I. main.c debug.c console.c timing.c \
+	pci/master_transaction.c pci/panic.c pci/pci.c pci/signals.c \
+	rtl8169.c \
 	-o main.elf
 
 f stack usage by function

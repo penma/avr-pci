@@ -2,14 +2,8 @@
 #include <util/delay.h>
 #include <stdint.h>
 #include "console.h"
-#include "pci_signals.h"
-
-__attribute__((noreturn)) static void panic(const char *m) {
-	disconnect_bus();
-	PCICR &= ~(1 << PCIE2);
-	console_str(m);
-	while (1) { }
-}
+#include "pci/signals.h"
+#include "pci/panic.h"
 
 static uint8_t ad_cbe_parity(uint32_t addr, uint8_t cbe) {
 	/* even number of ones in addr, cbe, par */
@@ -29,18 +23,6 @@ static void sanity_deasserted_frame_irdy() {
 	if (is_frame_asserted() || is_irdy_asserted()) {
 		panic("FRAME or IRDY asserted on idle bus");
 	}
-}
-
-static void dumpsignals() {
-	console_fstr("cbe");
-	console_hex8(PINA);
-	console_fstr(" ");
-	if (is_devsel_asserted()) { console_fstr("DS "); } else { console_fstr("ds "); }
-	if (is_frame_asserted()) { console_fstr("FR "); } else { console_fstr("fr "); }
-	if (is_trdy_asserted()) { console_fstr("TR "); } else { console_fstr("tr "); }
-	if (is_irdy_asserted()) { console_fstr("IR "); } else { console_fstr("ir "); }
-	console_fstr("\n");
-	_delay_ms(1000);
 }
 
 enum _rw_type { READ_TRANSACTION, WRITE_TRANSACTION };

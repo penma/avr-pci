@@ -103,6 +103,11 @@ void console_hex16(uint16_t wat) {
 	console_hex8(wat & 0xff);
 }
 
+void console_hex32(uint32_t wat) {
+	console_hex16(wat >> 16);
+	console_hex16(wat & 0xffff);
+}
+
 void console_dec16(uint16_t wat) {
 	if (wat >= 10000) goto n5;
 	if (wat >= 1000) goto n4;
@@ -127,6 +132,7 @@ void console_char(uint8_t wat) { }
 void console_str(const char *wat) { }
 void console_hex8(uint8_t wat) { }
 void console_hex16(uint16_t wat) { }
+void console_hex32(uint32_t wat) { }
 void console_dec16(uint16_t wat) { }
 
 #endif

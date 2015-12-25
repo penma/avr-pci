@@ -1,7 +1,6 @@
 #include <avr/io.h>
 #include <stdint.h>
 #include <util/delay.h>
-#include "timing.h"
 
 /* port A */
 #define PA_INTA (1 << 7)
@@ -133,13 +132,13 @@ FUNCS_SIG(IRDY,   irdy)
 void initialize_bus() {
 	/* do a bus reset. for this, assert RST# first.
 	 * while we're at it, we start configuring port B correctly
-	 * (RST, CLK, GNT as outputs and initially low,
+	 * (RST, CLK, GNT as outputs and initially low (GNT initially high)
 	 * REQ as input with pullup)
 	 * 1,2,3,7 are not connected (in case of 1,2,3 not to something we need
 	 * at least) and therefore pulled up to prevent floating
 	 */
 	DDRB = PB_RST | PB_CLK | PB_GNT;
-	PORTB = PB_REQ | (1 << 1) | (1 << 2) | (1 << 3) | (1 << 7);
+	PORTB = PB_REQ | PB_GNT | (1 << 1) | (1 << 2) | (1 << 3) | (1 << 7);
 
 	/* device is now in reset and will remain there for a while.
 
@@ -202,6 +201,7 @@ void initialize_bus() {
 	clk_high();
 	clk_low();
 
+	/* TODO */
 	if (0) for (uint32_t c = 0; c <= ((uint32_t)1 << (25-2)); c++) {
 		clk_high(); clk_low();
 		clk_high(); clk_low();
