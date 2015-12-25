@@ -18,7 +18,7 @@ d avr-gcc \
 	-DLCD_SUPPORT \
 	-I. main.c debug.c console.c timing.c \
 	pci/master_transaction.c pci/panic.c pci/pci.c pci/signals.c \
-	rtl8169.c \
+	lspci.c rtl8169.c \
 	-o main.elf
 
 f stack usage by function

@@ -87,6 +87,8 @@ void rtl8169_init() {
 		panic("/Not a RTL8169");
 	}
 
+	console_fstr("r8169 ");
+
 	/* set up I/O base address register */
 	pci_config_write32(PCIR_BAR(0), 0xffffffff);
 	if (pci_config_read32(PCIR_BAR(0)) != (0xffffff00 | PCIM_BAR_IO_SPACE)) {
@@ -110,6 +112,13 @@ void rtl8169_init() {
 	/* reset the card and wait for the reset to complete */
 	RTL_W8(Command, Command_Reset);
 	while (RTL_R8(Command) & Command_Reset) { }
+
+	/* can dump MAC address now */
+	for (int i = 0; i < 6; i++) {
+		console_hex8(RTL_R8(IdReg0 + i));
+		if (i == 2) { console_char(' '); }
+	}
+	console_fstr("\n");
 
 	/* fill config registers */
 	RTL_W8(Cmd9346, Cmd9346_WE);
