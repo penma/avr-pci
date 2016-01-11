@@ -6,7 +6,7 @@
 #include <util/delay.h>
 
 static void identify_subdevice_generic(uint32_t vpid, uint32_t svpid) {
-	if (vpid != svpid) {
+	if (vpid != svpid && svpid != 0) {
 		uint16_t svendor = svpid & 0xffff;
 		uint16_t sdev = (svpid >> 16) & 0xffff;
 
@@ -34,6 +34,12 @@ static void identify_device(uint32_t vpid, uint32_t svpid) {
 		console_fstr("USB1.1 Host VIA VT82");
 	} else if (vpid == 0x12161113 && svpid == vpid) {
 		console_fstr("Accton EN1207F\n");
+	} else if (vpid == 0x20311904) {
+		identify_subdevice_generic(vpid, svpid);
+		console_fstr("Silan SC92031\n");
+	} else if (vpid == 0x30441106) {
+		identify_subdevice_generic(vpid, svpid);
+		console_fstr("Firewire VIA VT63xx ");
 	} else {
 		uint16_t vendor = vpid & 0xffff;
 		uint16_t dev = (vpid >> 16) & 0xffff;

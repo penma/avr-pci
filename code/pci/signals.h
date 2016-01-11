@@ -19,6 +19,8 @@ void cbe_set(uint8_t v);
 
 void clk_high();
 void clk_low();
+void clk_start();
+void clk_stop();
 
 void assert_frame();
 void deassert_frame_1();

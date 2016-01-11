@@ -32,6 +32,16 @@ static uint8_t pci_read8(uint32_t addr, uint8_t cmd) {
 	return (master_read(addr & ~0b11, cmd, mask) >> shift) & 0xff;
 }
 
+static uint16_t pci_read16(uint32_t addr, uint8_t cmd) {
+	if ((addr & 0b11) == 0b00) {
+		return master_read(addr, cmd, 0b1100);
+	} else if ((addr & 0b11) == 0b10) {
+		return (master_read(addr & ~0b11, cmd, 0b0011) >> 16) & 0xffff;
+	} else {
+		_unimplemented();
+	}
+}
+
 static uint32_t pci_read32(uint32_t addr, uint8_t cmd) {
 	return master_read(addr, cmd, 0b0000);
 }
@@ -88,6 +98,10 @@ uint8_t pci_io_read8(uint32_t addr) {
 	return pci_read8(addr, CMD_IO_READ);
 }
 
+uint16_t pci_io_read16(uint32_t addr) {
+	return pci_read16(addr, CMD_IO_READ);
+}
+
 uint32_t pci_io_read32(uint32_t addr) {
 	return pci_read32(addr, CMD_IO_READ);
 }
@@ -102,4 +116,30 @@ void pci_io_write16(uint32_t addr, uint16_t val) {
 
 void pci_io_write32(uint32_t addr, uint32_t val) {
 	pci_write32(addr, val, CMD_IO_WRITE);
+}
+
+/* Mem Access */
+
+uint8_t pci_mem_read8(uint32_t addr) {
+	return pci_read8(addr, CMD_MEM_READ);
+}
+
+uint16_t pci_mem_read16(uint32_t addr) {
+	return pci_read16(addr, CMD_MEM_READ);
+}
+
+uint32_t pci_mem_read32(uint32_t addr) {
+	return pci_read32(addr, CMD_MEM_READ);
+}
+
+void pci_mem_write8(uint32_t addr, uint8_t val) {
+	pci_write8(addr, val, CMD_MEM_WRITE);
+}
+
+void pci_mem_write16(uint32_t addr, uint16_t val) {
+	pci_write16(addr, val, CMD_MEM_WRITE);
+}
+
+void pci_mem_write32(uint32_t addr, uint32_t val) {
+	pci_write32(addr, val, CMD_MEM_WRITE);
 }

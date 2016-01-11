@@ -5,9 +5,17 @@
 
 #include "debug.h"
 
+/* regular debug port */
+/*
 #define DBG_SHIFT PL7
 #define DBG_SYNC PL6
 #define DBG_DATA PL5
+*/
+
+/* 6ISP repurposed as debug port */
+#define DBG_SHIFT PB1
+#define DBG_SYNC PB3
+#define DBG_DATA PB2
 
 #ifdef LCD_SUPPORT
 
@@ -67,17 +75,17 @@ enum LCD_RS { LCD_COMMAND = 0, LCD_DATA = 1 };
 static void shiftreg_set(uint16_t sreg) {
 	for (signed int i = 15; i >= 0; i--) {
 		if ((sreg >> i) & 1) {
-			PORTL |= (1 << DBG_DATA);
+			PORTB |= (1 << DBG_DATA);
 		} else {
-			PORTL &= ~(1 << DBG_DATA);
+			PORTB &= ~(1 << DBG_DATA);
 		}
 
-		PORTL |= (1 << DBG_SHIFT);
-		PORTL &= ~(1 << DBG_SHIFT);
+		PORTB |= (1 << DBG_SHIFT);
+		PORTB &= ~(1 << DBG_SHIFT);
 	}
 
-	PORTL |= (1 << DBG_SYNC);
-	PORTL &= ~(1 << DBG_SYNC);
+	PORTB |= (1 << DBG_SYNC);
+	PORTB &= ~(1 << DBG_SYNC);
 }
 
 static void write_byte(enum LCD_RS rs, uint8_t d) {
@@ -128,8 +136,8 @@ void lcd_generatechar(uint8_t code, const uint8_t *data) {
 }
 
 void debug_init() {
-	DDRL |= (1 << DBG_DATA) | (1 << DBG_SHIFT) | (1 << DBG_SYNC);
-	PORTL &= ~( (1 << DBG_DATA) | (1 << DBG_SHIFT) | (1 << DBG_SYNC) );
+	DDRB |= (1 << DBG_DATA) | (1 << DBG_SHIFT) | (1 << DBG_SYNC);
+	PORTB &= ~( (1 << DBG_DATA) | (1 << DBG_SHIFT) | (1 << DBG_SYNC) );
 
 	/* wait for display to be ready after bootup */
 	_delay_ms(15);
@@ -212,8 +220,8 @@ void debug_dec16(uint16_t wat) {
 #else
 
 void debug_init() {
-	DDRL |= (1 << DBG_DATA) | (1 << DBG_SHIFT) | (1 << DBG_SYNC);
-	PORTL &= ~( (1 << DBG_DATA) | (1 << DBG_SHIFT) | (1 << DBG_SYNC) );
+	DDRB |= (1 << DBG_DATA) | (1 << DBG_SHIFT) | (1 << DBG_SYNC);
+	PORTB &= ~( (1 << DBG_DATA) | (1 << DBG_SHIFT) | (1 << DBG_SYNC) );
 }
 
 void debug_char(uint8_t data) {

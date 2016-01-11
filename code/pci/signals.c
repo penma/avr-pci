@@ -30,6 +30,9 @@
 #define PK_PERR (1 << 1)
 #define PK_LOCK (1 << 0)
 
+/* TODO: kill the "might not be inlinable" warnings */
+#define _force_inline __attribute__((always_inline))
+
 /* A/D lines */
 
 void ad_output_mode() {
@@ -56,7 +59,7 @@ uint32_t ad_get() {
 
 /* PAR line */
 
-void par_output_mode() {
+_force_inline void par_output_mode() {
 	DDRK |= PK_PAR;
 }
 
@@ -89,18 +92,27 @@ void cbe_tristate() {
 }
 
 void cbe_set(uint8_t v) {
-	PORTA &= ~(0x0f);
-	PORTA |= (v & 0xf);
+	PORTA = (PORTA & 0xf0) | (v & 0xf);
 }
 
 /* CLK line */
 
-__attribute__((always_inline)) void clk_high() {
+_force_inline void clk_high() {
 	PORTB |= PB_CLK;
 }
 
-__attribute__((always_inline)) void clk_low() {
+_force_inline void clk_low() {
 	PORTB &= ~PB_CLK;
+}
+
+_force_inline void clk_start() {
+	clk_low();
+	TCCR1A |= (1 << COM1A0);
+}
+
+_force_inline void clk_stop() {
+	TCCR1A &= ~(1 << COM1A0);
+	clk_low();
 }
 
 /* a signal is asserted by
@@ -136,9 +148,10 @@ void initialize_bus() {
 	 * REQ as input with pullup)
 	 * 1,2,3,7 are not connected (in case of 1,2,3 not to something we need
 	 * at least) and therefore pulled up to prevent floating
+	 * TODO: actually... connected to debug now
 	 */
-	DDRB = PB_RST | PB_CLK | PB_GNT;
-	PORTB = PB_REQ | PB_GNT | (1 << 1) | (1 << 2) | (1 << 3) | (1 << 7);
+	DDRB = PB_RST | PB_CLK | PB_GNT | (1 << 1) | (1 << 2) | (1 << 3);
+	PORTB = PB_REQ | PB_GNT | /* (1 << 1) | (1 << 2) | (1 << 3) | */ (1 << 7);
 
 	/* device is now in reset and will remain there for a while.
 
@@ -201,7 +214,19 @@ void initialize_bus() {
 	clk_high();
 	clk_low();
 
-	/* TODO */
+	/* set up the clock timer. application can enable/disable with
+	 * clk_start/stop
+	 */
+	TCCR1A = 0;
+	TCCR1B = (1 << WGM12) | (1 << CS10);
+	OCR1A = 0;
+
+	clk_start();
+
+	/* TODO - move this to a separate function so that the application
+	 * code can detect the necessity of extra cycles and handle accordingly.
+	 * TODO just make it use clk_start already
+	 */
 	if (0) for (uint32_t c = 0; c <= ((uint32_t)1 << (25-2)); c++) {
 		clk_high(); clk_low();
 		clk_high(); clk_low();
@@ -231,6 +256,7 @@ static void _disconnect_bus_2() {
 	DDRG = 0;
 	PORTA = PORTC = PORTE = PORTF = PORTG = 0;
 	PORTH = PORTJ = PORTK = 0;
+	clk_stop();
 }
 __attribute__((always_inline)) void disconnect_bus() {
 	/* of port B (arbitration signals), tristate all pins, except RST#,
@@ -244,7 +270,7 @@ __attribute__((always_inline)) void disconnect_bus() {
 	 * then, for all other pins, pullups are disabled.
 	 */
 	PORTB &= ~PB_RST;
-	DDRB = PB_RST;
+	DDRB = PB_RST    | (1 << 1) | (1 << 2) | (1 << 3);
 	PORTB = 0;
 
 	/* the reset part of this function is supposed to be inlined so that

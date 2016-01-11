@@ -16,6 +16,7 @@
 #include "pci/panic.h"
 
 #include "lspci.h"
+#include "rtl8139.h"
 #include "rtl8169.h"
 
 ISR(PCINT2_vect) {
@@ -57,6 +58,8 @@ void main() {
 	uint32_t pvid = pci_config_read32(PCIR_DEVVENDOR);
 	if (pvid == 0xffffffff) {
 		panic("/no device");
+	} else if (pvid == 0x813910ec) {
+		rtl8139_init();
 	} else if (pvid == 0x816910ec) {
 		rtl8169_init();
 	} else {

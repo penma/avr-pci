@@ -28,6 +28,13 @@ static void sanity_deasserted_frame_irdy() {
 enum _rw_type { READ_TRANSACTION, WRITE_TRANSACTION };
 
 __attribute__((always_inline)) static uint32_t master_transaction(uint32_t addr, uint8_t cmd, uint8_t be, uint32_t value, enum _rw_type type) {
+	/* this should never happen!
+	 * additionally, this shouldn't even happen when support for multiple
+	 * cards is added
+	 * one card transferring card to another card would be handled in
+	 * target_transaction (where we would not claim the transaction, but
+	 * someone else does, and then we would wait until it is finished)
+	 */
 	sanity_deasserted_frame_irdy();
 
 	/* Address phase */
@@ -82,7 +89,11 @@ __attribute__((always_inline)) static uint32_t master_transaction(uint32_t addr,
 		c--;
 
 		if (c == 0) {
+			/* TODO: let caller decide if this is fatal (during
+			 * normal operation) or expected (bus enumeration etc.)
+			 */
 			console_fstr("Master Abort/!DEVSEL");
+			_delay_ms(2000);
 			goto master_abort;
 		}
 	}
@@ -181,16 +192,21 @@ target_abort:
 
 retry:
 	/* TODO - currently unimplemented (RTL8139/69 never respond with
-	 * Target Retry
+	 * Target Retry)
 	 */
 	panic("Target requested Retry but this is unimplemented");
 }
 
 
 uint32_t master_read(uint32_t addr, uint8_t cmd, uint8_t be) {
-	return master_transaction(addr, cmd, be, 0, READ_TRANSACTION);
+	clk_stop();
+	uint32_t x = master_transaction(addr, cmd, be, 0, READ_TRANSACTION);
+	clk_start();
+	return x;
 }
 
 void master_write(uint32_t addr, uint8_t cmd, uint8_t be, uint32_t value) {
+	clk_stop();
 	master_transaction(addr, cmd, be, value, WRITE_TRANSACTION);
+	clk_start();
 }
